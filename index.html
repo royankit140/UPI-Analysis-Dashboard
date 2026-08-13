@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>India Digital Payments Intelligence Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f8;color:#1a1a2e;min-height:100vh}
+.header{background:linear-gradient(135deg,#1a1a2e 0%,#2d2b6b 100%);color:#fff;padding:18px 32px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(0,0,0,0.2)}
+.header-left h1{font-size:19px;font-weight:600;letter-spacing:0.3px}
+.header-left p{font-size:11.5px;opacity:0.65;margin-top:4px}
+.header-right{font-size:11.5px;opacity:0.7;text-align:right;line-height:1.6}
+.nav{background:#fff;border-bottom:1px solid #e2e5f0;display:flex;padding:0 32px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.nav-btn{padding:14px 22px;font-size:13px;font-weight:500;color:#666;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap}
+.nav-btn.active{color:#4a3aa7;border-bottom-color:#4a3aa7}
+.nav-btn:hover{color:#4a3aa7}
+.page{display:none;padding:22px 32px 32px}
+.page.active{display:block}
+
+/* SLICERS */
+.slicer-bar{background:#fff;border-radius:12px;padding:12px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 1px 5px rgba(0,0,0,0.06);border:1px solid #e8eaf0}
+.slicer-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap}
+.slicer-divider{width:1px;height:20px;background:#e8eaf0}
+.slicer-btn{padding:5px 14px;border-radius:20px;border:1.5px solid #dde0f0;background:#f8f9ff;font-size:12px;font-weight:500;color:#555;cursor:pointer;transition:all 0.15s}
+.slicer-btn.active{background:#4a3aa7;color:#fff;border-color:#4a3aa7}
+.slicer-btn:hover:not(.active){border-color:#4a3aa7;color:#4a3aa7}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+.kpi-card{background:#fff;border-radius:12px;padding:16px 15px;box-shadow:0 1px 6px rgba(0,0,0,0.07);border:1px solid #e8eaf0;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.purple::before{background:#4a3aa7}
+.kpi-card.green::before{background:#1baf7a}
+.kpi-card.blue::before{background:#2a78d6}
+.kpi-card.amber::before{background:#f59e0b}
+.kpi-card.red::before{background:#e34948}
+.kpi-icon{font-size:18px;margin-bottom:6px;display:block}
+.kpi-label{font-size:10.5px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+.kpi-value{font-size:21px;font-weight:700;color:#1a1a2e;line-height:1.1}
+.kpi-sub{font-size:10.5px;color:#aaa;margin-top:4px}
+.kpi-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:7px}
+.kpi-badge.up{background:#e8f8f1;color:#1baf7a}
+.kpi-badge.down{background:#fef2f2;color:#e34948}
+.kpi-badge.neu{background:#f0f0f8;color:#666}
+
+/* CHART LAYOUTS */
+.chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.chart-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.chart-grid-full{margin-bottom:16px}
+.chart-card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.07);border:1px solid #e8eaf0}
+.chart-title{font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:2px}
+.chart-sub{font-size:11px;color:#999;margin-bottom:12px;line-height:1.5}
+.chart-wrap{position:relative}
+.h200{height:200px}
+.h240{height:240px}
+.h260{height:260px}
+.h280{height:280px}
+
+/* CALLOUT BOX */
+.callout{border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.6;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
+.callout.info{background:#f0eeff;border:1px solid #cbc5f5;color:#3a2e8c}
+.callout.warn{background:#fff8ec;border:1px solid #fcd88a;color:#7c5200}
+.callout-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+
+/* INSIGHTS PAGE */
+.insight-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px}
+.insight-card{border-radius:10px;padding:16px;border-left:4px solid}
+.insight-card.purple{background:#f3f1fd;border-color:#4a3aa7}
+.insight-card.green{background:#edfaf4;border-color:#1baf7a}
+.insight-card.amber{background:#fffbeb;border-color:#f59e0b}
+.insight-card.red{background:#fff1f1;border-color:#e34948}
+.insight-title{font-size:12.5px;font-weight:700;color:#333;margin-bottom:6px}
+.insight-num{font-size:26px;font-weight:800;display:block;margin-bottom:4px;line-height:1}
+.insight-num.purple{color:#4a3aa7}
+.insight-num.green{color:#1baf7a}
+.insight-num.amber{color:#f59e0b}
+.insight-num.red{color:#e34948}
+.insight-text{font-size:12px;color:#555;line-height:1.65}
+
+/* REC TABLE */
+.rec-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.rec-table th{background:#f4f4f8;padding:10px 14px;text-align:left;font-weight:600;color:#444;border-bottom:2px solid #e0e3f0}
+.rec-table td{padding:10px 14px;border-bottom:1px solid #f0f0f6;color:#555;line-height:1.5;vertical-align:top}
+.rec-table tr:hover td{background:#fafafe}
+.tag{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700}
+.tag-p{background:#ede9ff;color:#4a3aa7}
+.tag-g{background:#e6faf2;color:#1baf7a}
+.tag-a{background:#fff8e6;color:#d97706}
+.tag-r{background:#fff0f0;color:#e34948}
+.source-note{font-size:11px;color:#bbb;margin-top:18px;text-align:center;line-height:1.7}
+
+/* PARADOX EXPLAINER */
+.paradox-box{display:grid;grid-template-columns:1fr auto 1fr;gap:0;background:#fff;border-radius:12px;border:1px solid #e8eaf0;box-shadow:0 1px 6px rgba(0,0,0,0.07);overflow:hidden;margin-bottom:16px}
+.paradox-side{padding:16px 20px;text-align:center}
+.paradox-side.left{background:#f3f1fd}
+.paradox-side.right{background:#fff8ec}
+.paradox-mid{display:flex;align-items:center;justify-content:center;padding:0 16px;background:#fff;border-left:1px solid #e8eaf0;border-right:1px solid #e8eaf0}
+.paradox-vs{font-size:18px;font-weight:800;color:#ccc}
+.paradox-num{font-size:28px;font-weight:800;margin:4px 0}
+.paradox-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em}
+.paradox-sub{font-size:11.5px;color:#666;margin-top:4px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>🇮🇳 India Digital Payments Intelligence Dashboard</h1>
+    <p>RBI Payment System Indicators &nbsp;·&nbsp; Oct 2024 – Apr 2026 &nbsp;·&nbsp; 6 Payment Modes &nbsp;·&nbsp; 19 Months &nbsp;·&nbsp; 114 Data Points</p>
+  </div>
+  <div class="header-right">Built by <strong>Ankit Roy</strong></div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('overview',this)">📊 UPI Overview</button>
+  <button class="nav-btn" onclick="showPage('competitive',this)">⚔️ Competitive Landscape</button>
+  <button class="nav-btn" onclick="showPage('deepdive',this)">🔍 UPI Deep Dive</button>
+  <button class="nav-btn" onclick="showPage('insights',this)">💡 Insights & Strategy</button>
+</div>
+
+<!-- ═══════════ PAGE 1: UPI OVERVIEW ═══════════ -->
+<div id="overview" class="page active">
+  <div class="slicer-bar">
+    <span class="slicer-label">📅 Filter Period</span>
+    <div class="slicer-divider"></div>
+    <button class="slicer-btn active" onclick="filterPeriod('all',this)">All 19 Months</button>
+    <button class="slicer-btn" onclick="filterPeriod('2024',this)">Oct – Dec 2024</button>
+    <button class="slicer-btn" onclick="filterPeriod('2025',this)">Full Year 2025</button>
+    <button class="slicer-btn" onclick="filterPeriod('2026',this)">Jan – Apr 2026</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card purple">
+      <span class="kpi-icon">📲</span>
+      <div class="kpi-label">UPI Volume (Apr 2026)</div>
+      <div class="kpi-value">2,23,468</div>
+      <div class="kpi-sub">Lakh Transactions/month</div>
+      <span class="kpi-badge up">▲ 85.9% since Oct 2024</span>
+    </div>
+    <div class="kpi-card green">
+      <span class="kpi-icon">💰</span>
+      <div class="kpi-label">UPI Value (Apr 2026)</div>
+      <div class="kpi-value">₹29.03L Cr</div>
+      <div class="kpi-sub">Total transaction value</div>
+      <span class="kpi-badge up">▲ 59.2% since Oct 2024</span>
+    </div>
+    <div class="kpi-card blue">
+      <span class="kpi-icon">🏆</span>
+      <div class="kpi-label">UPI Market Share</div>
+      <div class="kpi-value">92.22%</div>
+      <div class="kpi-sub">Of all payment volumes</div>
+      <span class="kpi-badge up">▲ from 87.7% (Oct 2024)</span>
+    </div>
+    <div class="kpi-card amber">
+      <span class="kpi-icon">📈</span>
+      <div class="kpi-label">Peak Volume Month</div>
+      <div class="kpi-value">Mar 2026</div>
+      <div class="kpi-sub">2,26,411 Lakh transactions</div>
+      <span class="kpi-badge neu">Highest on record</span>
+    </div>
+    <div class="kpi-card red">
+      <span class="kpi-icon">📉</span>
+      <div class="kpi-label">Debit Card Decline</div>
+      <div class="kpi-value">−44.6%</div>
+      <div class="kpi-sub">Volume Oct 2024 → Apr 2026</div>
+      <span class="kpi-badge down">UPI cannibalising</span>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">UPI Transaction Volume Trend</div>
+      <div class="chart-sub">Lakh transactions/month · Consistent upward growth with minor seasonal dips</div>
+      <div class="chart-wrap h260"><canvas id="upiVolChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">UPI Transaction Value Trend</div>
+      <div class="chart-sub">₹ Crore/month · Value growth slightly slower than volume — smaller tickets growing</div>
+      <div class="chart-wrap h260"><canvas id="upiValChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid-full">
+    <div class="chart-card">
+      <div class="chart-title">UPI Market Share of Total Payment Volume (%)</div>
+      <div class="chart-sub">Crossed 90% threshold in Dec 2024 · Never dipped below since · Reached all-time high of 92.22% in Apr 2026</div>
+      <div class="chart-wrap h240"><canvas id="shareVolChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE 2: COMPETITIVE LANDSCAPE ═══════════ -->
+<div id="competitive" class="page">
+  <div class="slicer-bar">
+    <span class="slicer-label">💳 Toggle Payment Mode</span>
+    <div class="slicer-divider"></div>
+    <button class="slicer-btn active" id="pt-UPI" onclick="togglePT('UPI',this)">UPI</button>
+    <button class="slicer-btn active" id="pt-NEFT" onclick="togglePT('NEFT',this)">NEFT</button>
+    <button class="slicer-btn active" id="pt-RTGS" onclick="togglePT('RTGS',this)">RTGS</button>
+    <button class="slicer-btn active" id="pt-IMPS" onclick="togglePT('IMPS',this)">IMPS</button>
+    <button class="slicer-btn active" id="pt-CC" onclick="togglePT('Credit Cards',this)">Credit Cards</button>
+    <button class="slicer-btn active" id="pt-DC" onclick="togglePT('Debit Cards',this)">Debit Cards</button>
+    <span style="font-size:11px;color:#aaa;margin-left:4px">(slicer affects bottom trend chart)</span>
+  </div>
+
+  <div class="callout info">
+    <span class="callout-icon">💡</span>
+    <span><strong>The Volume–Value Paradox:</strong> UPI dominates in <em>how many</em> transactions happen (92% of all payments) — but RTGS dominates in <em>how much money</em> moves (71% of total value). UPI = millions of small daily payments. RTGS = a few massive corporate/institutional transfers. Both charts below show Apr 2026 data — same month, different story.</span>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Transaction Volume by Payment Mode — Apr 2026</div>
+      <div class="chart-sub">Lakh transactions · UPI = 700× more transactions than RTGS</div>
+      <div class="chart-wrap h240"><canvas id="volBarChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Transaction Value by Payment Mode — Apr 2026</div>
+      <div class="chart-sub">₹ Crore · RTGS moves 6× more money than UPI despite far fewer transactions</div>
+      <div class="chart-wrap h240"><canvas id="valBarChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Volume Share — Apr 2026</div>
+      <div class="chart-sub">UPI accounts for 92.2% of all digital transactions</div>
+      <div class="chart-wrap h200"><canvas id="volDonut"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Value Share — Apr 2026</div>
+      <div class="chart-sub">RTGS accounts for 71.4% of total money transferred</div>
+      <div class="chart-wrap h200"><canvas id="valDonut"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid-full">
+    <div class="chart-card">
+      <div class="chart-title">All Payment Modes — Volume Trend (Oct 2024 – Apr 2026)</div>
+      <div class="chart-sub">Use the Payment Mode slicer above to show/hide individual modes</div>
+      <div class="chart-wrap h260"><canvas id="allVolLine"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE 3: UPI DEEP DIVE ═══════════ -->
+<div id="deepdive" class="page">
+
+  <div class="paradox-box">
+    <div class="paradox-side left">
+      <div class="paradox-label">UPI Vol Share (Apr 2026)</div>
+      <div class="paradox-num" style="color:#4a3aa7">92.22%</div>
+      <div class="paradox-sub">of all transactions<br>by <strong>count</strong></div>
+    </div>
+    <div class="paradox-mid"><div class="paradox-vs">≠</div></div>
+    <div class="paradox-side right">
+      <div class="paradox-label">UPI Value Share (Apr 2026)</div>
+      <div class="paradox-num" style="color:#f59e0b">10.55%</div>
+      <div class="paradox-sub">of all money moved<br>by <strong>value</strong></div>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">UPI: Volume vs Value — Ticket Size Story</div>
+      <div class="chart-sub">Volume (bars) growing faster than Value (line) → average UPI ticket size is growing slowly, confirming micro-payment dominance</div>
+      <div class="chart-wrap h260"><canvas id="volValCombo"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">UPI Vol Share vs Val Share Over Time</div>
+      <div class="chart-sub">~82 percentage point gap between volume and value share — the paradox is persistent and widening</div>
+      <div class="chart-wrap h260"><canvas id="shareCombo"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Debit Card Decline (Oct 2024 – Apr 2026)</div>
+      <div class="chart-sub">Volume fell −44.6% in 19 months · UPI is directly replacing debit card usage for everyday retail payments</div>
+      <div class="chart-wrap h240"><canvas id="debitDecline"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Credit Cards Rising, Debit Cards Falling</div>
+      <div class="chart-sub">Credit cards +74% while debit cards −44.6% · Signals shift to credit-on-UPI and BNPL products</div>
+      <div class="chart-wrap h240"><canvas id="cardCompare"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid-full">
+    <div class="chart-card">
+      <div class="chart-title">NEFT vs RTGS — High-Value Settlement Battle</div>
+      <div class="chart-sub">RTGS consistently dominates institutional value settlement · NEFT handles mid-range corporate payments · Both far exceed UPI in ₹ terms</div>
+      <div class="chart-wrap h240"><canvas id="neftRtgs"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE 4: INSIGHTS & STRATEGY ═══════════ -->
+<div id="insights" class="page">
+  <div class="insight-grid">
+    <div class="insight-card purple">
+      <div class="insight-title">🏆 UPI's Unstoppable Volume Dominance</div>
+      <span class="insight-num purple">92.22%</span>
+      <div class="insight-text">UPI captured 92.2% of all digital payment transactions by volume in Apr 2026 — up from 87.7% in Oct 2024. The platform crossed 90% in Dec 2024 and has never dipped below. With 2,23,468 lakh monthly transactions, UPI processes more payments than all other modes combined by 10×.</div>
+    </div>
+    <div class="insight-card amber">
+      <div class="insight-title">⚖️ The Volume–Value Paradox</div>
+      <span class="insight-num amber">~10%</span>
+      <div class="insight-text">Despite 92% volume share, UPI accounts for only ~10% of total transaction value. RTGS — with just 0.13% of volume — handles 71.4% of all money transferred. UPI dominates retail micro-payments; RTGS and NEFT remain the backbone of high-value institutional settlement.</div>
+    </div>
+    <div class="insight-card red">
+      <div class="insight-title">📉 Debit Cards: A Dying Payment Mode</div>
+      <span class="insight-num red">−44.6%</span>
+      <div class="insight-text">Debit card volumes collapsed from 1,768 lakh (Oct 2024) to just 979 lakh (Apr 2026) — a 44.6% fall in 19 months. UPI is directly cannibalising debit card usage. Banks should reconsider debit infrastructure investment and pivot resources to UPI-native products.</div>
+    </div>
+    <div class="insight-card green">
+      <div class="insight-title">💳 Credit-on-UPI: The Next Battleground</div>
+      <span class="insight-num green">+74%</span>
+      <div class="insight-text">Credit card volumes surged 74% from 3,215 lakh (Oct 2024) to 5,596 lakh (Apr 2026). Combined with NPCI's push for credit lines on UPI, this signals a powerful convergence. The fintech opportunity lies in BNPL and credit-on-UPI products embedded within everyday UPI flows.</div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">Strategic Recommendations</div>
+    <div class="chart-sub">Based on 19-month RBI Payment System Indicators analysis · Oct 2024 – Apr 2026</div>
+    <br>
+    <table class="rec-table">
+      <thead>
+        <tr>
+          <th width="26%">Finding</th>
+          <th width="38%">Strategic Implication</th>
+          <th width="22%">Who Should Act</th>
+          <th width="14%">Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>UPI at 92% volume share</td>
+          <td>B2B payment integrations should default to UPI rails; reduce multi-modal complexity in merchant onboarding</td>
+          <td>Fintechs, Payment Aggregators</td>
+          <td><span class="tag tag-p">High</span></td>
+        </tr>
+        <tr>
+          <td>RTGS dominates 71% of value</td>
+          <td>High-value corporate treasury clients need RTGS + NEFT bundling — not UPI-first strategy</td>
+          <td>Banks, Corporate Treasury</td>
+          <td><span class="tag tag-p">High</span></td>
+        </tr>
+        <tr>
+          <td>Debit card volumes −44.6%</td>
+          <td>Reduce debit card issuance and infrastructure investment; reallocate budget to UPI product stack</td>
+          <td>Banks, Card Networks</td>
+          <td><span class="tag tag-a">Medium</span></td>
+        </tr>
+        <tr>
+          <td>Credit card volumes +74%</td>
+          <td>Launch credit-line-on-UPI and BNPL products; leverage UPI's network for credit distribution</td>
+          <td>Banks, NBFCs, Fintechs</td>
+          <td><span class="tag tag-p">High</span></td>
+        </tr>
+        <tr>
+          <td>UPI ticket size growing slowly</td>
+          <td>Merchant incentive programmes needed to drive higher-value UPI transactions (₹10,000+)</td>
+          <td>NPCI, RBI, Aggregators</td>
+          <td><span class="tag tag-g">Low-Med</span></td>
+        </tr>
+        <tr>
+          <td>IMPS volumes declining</td>
+          <td>IMPS losing relevance as UPI offers same instant transfer with better UX — review IMPS fee structures</td>
+          <td>Banks, NPCI</td>
+          <td><span class="tag tag-a">Medium</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">📋 Data Source & Methodology</div>
+    <div class="chart-sub">Transparency note</div>
+    <br>
+    <div style="font-size:12.5px;color:#555;line-height:1.9">
+      <strong>Data Source:</strong> Reserve Bank of India — Payment System Indicators (monthly public releases, Oct 2024 – Apr 2026)<br>
+      <strong>Coverage:</strong> 6 payment modes · 19 consecutive months · 114 data points<br>
+      <strong>Metrics:</strong> Volume (Lakh transactions) and Value (₹ Crore) for UPI, NEFT, RTGS, IMPS, Credit Cards, Debit Cards<br>
+      <strong>Tools:</strong> Python (pandas) for data extraction & cleaning from RBI Excel files · Chart.js for interactive visualization<br>
+      <strong>Data Quality Note:</strong> Certain months (Nov-25, Feb-26) show carry-forward values in RBI source files — flagged as a data quality observation consistent with the published indicators.
+    </div>
+  </div>
+
+  <div class="source-note">
+    Data Source: Reserve Bank of India — Payment System Indicators &nbsp;|&nbsp; Analysis & Visualization: Ankit Roy &nbsp;|&nbsp; 2026
+  </div>
+</div>
+
+<script>
+const months=["Oct-24","Nov-24","Dec-24","Jan-25","Feb-25","Mar-25","Apr-25","May-25","Jun-25","Jul-25","Aug-25","Sep-25","Oct-25","Nov-25","Dec-25","Jan-26","Feb-26","Mar-26","Apr-26"];
+const colors={UPI:'#4a3aa7',NEFT:'#1A5276',RTGS:'#784212',IMPS:'#1baf7a','Credit Cards':'#e34948','Debit Cards':'#2a78d6'};
+
+const data={
+  UPI:{volume:[120202.26,154820.21,167300.09,169960.01,161061.93,183015.08,178934.24,186774.6,183950.06,194679.48,165849.66,196334.33,207009.21,169960.01,216346.68,217034.45,178934.24,226411.08,223467.97],value:[1822949.45,2155187.41,2324699.94,2348037.11,2196481.7,2477221.59,2394925.87,2514297.01,2403930.69,2508498.1,2349821.46,2489736.52,2727790.71,2348037.11,2796712.71,2833481.26,2394925.87,2952542.03,2902988.05]},
+  NEFT:{volume:[6673.93,7769.51,8307.02,8567.93,7647.93,9008.97,7687.52,8215.47,7920.52,8500.14,9183.38,8403.21,8790.97,8567.93,8777.58,8724.2,7687.52,9390.43,8330.47],value:[3368835.71,3380883.69,3814965.98,3848032.95,3540103.38,4854308.48,3897347.9,3793102.92,3764741.56,3993960.21,4152427.74,4265310.16,4273607.85,3848032.95,4376908.93,4329421.05,3897347.9,5661604.25,4424471.09]},
+  RTGS:{volume:[230.39,240.29,262.29,268.15,244.2,307.03,262.41,274.71,254.88,277.67,267.92,280.83,296.76,268.15,317.67,316.99,262.41,367.45,315.56],value:[15888777.99,14826882.21,19163586.8,17499362.7,16099370.9,21401969.1,16895789.39,17013770.09,19012359.63,18863902.45,17070975.0,19836941.97,18732702.14,17499362.7,21969481.42,19176703.79,16895789.39,23758758.9,19248589.55]},
+  IMPS:{volume:[4987.93,4079.18,4411.64,4442.23,4048.29,4616.39,4492.53,4636.6,4481.05,4821.9,4668.23,3943.79,4035.88,4442.23,3799.33,3740.33,4492.53,3656.79,3624.87],value:[570126.07,558327.6,601549.15,606420.17,563081.64,667812.8,621666.37,640867.39,606356.3,631411.24,629381.52,596847.03,641963.6,606420.17,662451.92,672989.44,621666.37,740176.18,700909.17]},
+  'Credit Cards':{volume:[3215.0,3936.04,4331.22,4305.72,3969.59,4586.5,4502.7,4676.93,4587.1,4861.81,4332.14,4952.41,5182.9,4305.72,5398.34,5397.11,4502.7,5774.76,5596.15],value:[165119.24,169298.16,188085.81,184126.17,167207.96,201493.9,184237.41,189831.64,183088.14,193849.42,201788.91,216706.99,214230.3,184126.17,204686.61,199084.87,184237.41,219494.69,197304.6]},
+  'Debit Cards':{volume:[1768.16,1234.98,1282.84,1216.69,1082.5,1203.02,1170.93,1150.47,1085.72,1120.61,1427.17,1047.39,1096.25,1216.69,1049.24,1018.29,1170.93,1013.17,978.85],value:[47934.52,39089.07,40670.72,38963.36,34314.04,39054.68,38113.12,36978.43,35463.41,38137.51,46829.75,36775.7,42143.01,38963.36,37274.38,37956.69,38113.12,37948.39,36976.78]}
+};
+const shareVol=[87.69,89.97,90.0,90.04,90.46,90.27,90.81,90.79,90.94,90.86,89.3,91.33,91.43,90.04,91.79,91.87,90.81,91.81,92.22];
+const shareVal=[8.34,10.2,8.9,9.57,9.72,8.36,9.97,10.39,9.24,9.56,9.61,9.07,10.24,9.57,9.31,10.4,9.97,8.85,10.55];
+
+const font={family:'Segoe UI'};
+const gridColor='#f0f0f8';
+const baseOpts={
+  responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{font:{...font,size:11},boxWidth:12,padding:12}},tooltip:{bodyFont:font,titleFont:{...font,weight:'600'},padding:10,cornerRadius:8,boxPadding:4}},
+  scales:{x:{ticks:{font:{...font,size:10},maxRotation:45},grid:{display:false}},y:{ticks:{font:{...font,size:10}},grid:{color:gridColor}}}
+};
+
+// P1
+const upiVolChart=new Chart(document.getElementById('upiVolChart'),{type:'line',data:{labels:months,datasets:[{label:'Volume (Lakh)',data:data.UPI.volume,borderColor:'#4a3aa7',backgroundColor:'rgba(74,58,167,0.09)',fill:true,tension:0.4,pointRadius:3,pointHoverRadius:6,pointBackgroundColor:'#4a3aa7'}]},options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:false}}}});
+
+const upiValChart=new Chart(document.getElementById('upiValChart'),{type:'line',data:{labels:months,datasets:[{label:'Value (₹ Cr)',data:data.UPI.value,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,0.09)',fill:true,tension:0.4,pointRadius:3,pointHoverRadius:6,pointBackgroundColor:'#1baf7a'}]},options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:false}},scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>'₹'+(v/100000).toFixed(1)+'L Cr'}}}}});
+
+const shareVolChart=new Chart(document.getElementById('shareVolChart'),{type:'line',data:{labels:months,datasets:[{label:'UPI Vol Share %',data:shareVol,borderColor:'#4a3aa7',backgroundColor:'rgba(74,58,167,0.07)',fill:true,tension:0.4,pointRadius:3,pointHoverRadius:6},{label:'90% Threshold',data:Array(19).fill(90),borderColor:'#e34948',borderDash:[6,4],pointRadius:0,fill:false,borderWidth:1.5}]},options:{...baseOpts,scales:{x:{...baseOpts.scales.x},y:{...baseOpts.scales.y,min:86,max:94,ticks:{callback:v=>v+'%',font:{...font,size:10}}}}}});
+
+// P2
+const ptKeys=['UPI','NEFT','Credit Cards','IMPS','Debit Cards','RTGS'];
+const apr26Vol={UPI:223467.97,NEFT:8330.47,'Credit Cards':5596.15,IMPS:3624.87,'Debit Cards':978.85,RTGS:315.56};
+const apr26Val={UPI:2902988.05,NEFT:4424471.09,'Credit Cards':197304.6,IMPS:700909.17,'Debit Cards':36976.78,RTGS:19248589.55};
+
+const volBarChart=new Chart(document.getElementById('volBarChart'),{type:'bar',data:{labels:ptKeys,datasets:[{label:'Volume (Lakh)',data:ptKeys.map(k=>apr26Vol[k]),backgroundColor:ptKeys.map(k=>colors[k]),borderRadius:5}]},options:{...baseOpts,indexAxis:'y',plugins:{...baseOpts.plugins,legend:{display:false}}}});
+const valBarChart=new Chart(document.getElementById('valBarChart'),{type:'bar',data:{labels:ptKeys,datasets:[{label:'Value (₹ Cr)',data:ptKeys.map(k=>apr26Val[k]),backgroundColor:ptKeys.map(k=>colors[k]),borderRadius:5}]},options:{...baseOpts,indexAxis:'y',plugins:{...baseOpts.plugins,legend:{display:false}}}});
+
+const totalVol=Object.values(apr26Vol).reduce((a,b)=>a+b,0);
+const totalVal=Object.values(apr26Val).reduce((a,b)=>a+b,0);
+const donutOpts=(total)=>({responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{font:{...font,size:11},boxWidth:11,padding:10}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed.toFixed(2)+'%'},bodyFont:font,titleFont:{...font,weight:'600'},padding:10,cornerRadius:8}}});
+const volDonut=new Chart(document.getElementById('volDonut'),{type:'doughnut',data:{labels:ptKeys,datasets:[{data:ptKeys.map(k=>+(apr26Vol[k]/totalVol*100).toFixed(2)),backgroundColor:ptKeys.map(k=>colors[k]),borderWidth:2,borderColor:'#fff'}]},options:donutOpts(totalVol)});
+const valDonut=new Chart(document.getElementById('valDonut'),{type:'doughnut',data:{labels:ptKeys,datasets:[{data:ptKeys.map(k=>+(apr26Val[k]/totalVal*100).toFixed(2)),backgroundColor:ptKeys.map(k=>colors[k]),borderWidth:2,borderColor:'#fff'}]},options:donutOpts(totalVal)});
+
+const allVolLine=new Chart(document.getElementById('allVolLine'),{type:'line',data:{labels:months,datasets:Object.keys(colors).map(pt=>({label:pt,data:data[pt].volume,borderColor:colors[pt],backgroundColor:'transparent',tension:0.4,pointRadius:2,pointHoverRadius:5,borderWidth:2}))},options:baseOpts});
+
+// P3
+const volValCombo=new Chart(document.getElementById('volValCombo'),{type:'bar',data:{labels:months,datasets:[{label:'Volume (Lakh)',data:data.UPI.volume,backgroundColor:'rgba(74,58,167,0.72)',borderRadius:4,yAxisID:'y'},{label:'Value (÷1000 ₹ Cr)',data:data.UPI.value.map(v=>v/1000),type:'line',borderColor:'#1baf7a',backgroundColor:'transparent',tension:0.4,pointRadius:2,yAxisID:'y1',borderWidth:2}]},options:{...baseOpts,scales:{x:{ticks:{font:{...font,size:10},maxRotation:45},grid:{display:false}},y:{ticks:{font:{...font,size:10}},grid:{color:gridColor},title:{display:true,text:'Volume (Lakh)',font:{...font,size:10}}},y1:{position:'right',ticks:{font:{...font,size:10}},grid:{display:false},title:{display:true,text:'Value ÷1000 (₹ Cr)',font:{...font,size:10}}}}}});
+
+const shareCombo=new Chart(document.getElementById('shareCombo'),{type:'line',data:{labels:months,datasets:[{label:'Vol Share %',data:shareVol,borderColor:'#4a3aa7',backgroundColor:'rgba(74,58,167,0.07)',fill:true,tension:0.4,pointRadius:2,borderWidth:2},{label:'Val Share %',data:shareVal,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.07)',fill:true,tension:0.4,pointRadius:2,borderWidth:2}]},options:{...baseOpts,scales:{x:{ticks:{font:{...font,size:10},maxRotation:45},grid:{display:false}},y:{ticks:{callback:v=>v+'%',font:{...font,size:10}},grid:{color:gridColor}}}}});
+
+const debitDecline=new Chart(document.getElementById('debitDecline'),{type:'line',data:{labels:months,datasets:[{label:'Debit Cards (Lakh)',data:data['Debit Cards'].volume,borderColor:'#2a78d6',backgroundColor:'rgba(42,120,214,0.09)',fill:true,tension:0.4,pointRadius:3,pointHoverRadius:6}]},options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:false}}}});
+
+const cardCompare=new Chart(document.getElementById('cardCompare'),{type:'line',data:{labels:months,datasets:[{label:'Credit Cards',data:data['Credit Cards'].volume,borderColor:'#e34948',backgroundColor:'transparent',tension:0.4,pointRadius:2,borderWidth:2.5},{label:'Debit Cards',data:data['Debit Cards'].volume,borderColor:'#2a78d6',backgroundColor:'transparent',tension:0.4,pointRadius:2,borderWidth:2,borderDash:[5,3]}]},options:baseOpts});
+
+const neftRtgs=new Chart(document.getElementById('neftRtgs'),{type:'line',data:{labels:months,datasets:[{label:'NEFT Value (₹ Cr)',data:data.NEFT.value,borderColor:'#1A5276',backgroundColor:'transparent',tension:0.4,pointRadius:2,borderWidth:2.5},{label:'RTGS Value (₹ Cr)',data:data.RTGS.value,borderColor:'#784212',backgroundColor:'transparent',tension:0.4,pointRadius:2,borderWidth:2.5}]},options:baseOpts});
+
+// FUNCTIONS
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+const periodRanges={all:[0,18],'2024':[0,2],'2025':[3,15],'2026':[16,18]};
+function filterPeriod(period,btn){
+  document.querySelectorAll('.slicer-btn').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes('filterPeriod'))b.classList.remove('active')});
+  btn.classList.add('active');
+  const[s,e]=periodRanges[period];
+  const m=months.slice(s,e+1);
+  [upiVolChart,upiValChart,shareVolChart].forEach(ch=>{
+    ch.data.labels=m;
+    ch.data.datasets.forEach(ds=>{
+      if(ds.label==='90% Threshold') ds.data=Array(m.length).fill(90);
+      else if(ds.label==='UPI Vol Share %') ds.data=shareVol.slice(s,e+1);
+      else if(ds.label==='Value (₹ Cr)') ds.data=data.UPI.value.slice(s,e+1);
+      else ds.data=data.UPI.volume.slice(s,e+1);
+    });
+    ch.update();
+  });
+}
+
+function togglePT(pt,btn){
+  btn.classList.toggle('active');
+  const idx=allVolLine.data.datasets.findIndex(d=>d.label===pt);
+  if(idx>=0){allVolLine.data.datasets[idx].hidden=!allVolLine.data.datasets[idx].hidden;allVolLine.update();}
+}
+</script>
+</body>
+</html>
